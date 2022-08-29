@@ -1,0 +1,51 @@
+from telebot import *
+from config import keys, TOKEN
+from utils import convertion_exeption, cryptoconverter
+
+
+
+bot = telebot.TeleBot(TOKEN)
+
+@bot.message_handler(commands=["start", "help"])
+def help(message: telebot.types.Message):
+    text = "чтобы начать работу введите команду боту в следующем формате: \n" \
+           "<имя валюты> <в какую валюту перевести> <сколько>\n" \
+           "вводите данные через пробел\n  увидеть список доступных валют /values"
+    bot.reply_to(message, text)
+@bot.message_handler(commands=["values"])
+def values(message: telebot.types.Message):
+    text = "доступные валюты"
+    for key in keys.keys():
+        text = "\n".join((text, key, ))
+    bot.reply_to(message, text)
+
+
+@bot.message_handler(content_types=["text", ])
+def convert(message: telebot.types.Message):
+
+    try:
+        values = message.text.split(" ")
+        print(values)
+        if len(values) != 3:
+            raise convertion_exeption("мне лень проверять больше или меньше параметров ты написал, но ты не прав")
+        print(message.from_user.username)
+        quote, base, amount = values
+        quote = quote.lower()
+        base = base.lower()
+
+
+        total_base = cryptoconverter.convert(quote, base, amount)
+    except convertion_exeption as e:
+        bot.reply_to(message, f"ошибка пользователя: \n {e}")
+    except Exception as e:
+        bot.reply_to(message, f"не удалось обработать команду: \n {e}")
+    else:
+        o = float(total_base) * float(amount)
+        o = '{:f}'.format(o)
+        text = f"{amount} {quote} = {o} {base}"
+        bot.send_message(message.chat.id, text)
+
+
+
+
+bot.polling()
